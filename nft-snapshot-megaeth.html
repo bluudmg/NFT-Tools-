@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NFT Holder Snapshot — MegaETH</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f9f9f8;
+    color: #111;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 60px 24px 80px;
+  }
+
+  .page { max-width: 620px; margin: 0 auto; }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    color: #111;
+  }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 40px; }
+
+  /* ── FIELDS ── */
+  .field { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 7px;
+  }
+
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    border: 1px solid #e0e0de;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #111;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: textfield;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button { display: none; }
+  input:focus { border-color: #aaa; }
+  input::placeholder { color: #bbb; }
+  input:disabled { background: #f4f4f2; color: #bbb; cursor: not-allowed; }
+
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── RPC PRESETS ── */
+  .presets {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
+  }
+  .preset-btn {
+    background: #fff;
+    border: 1px solid #e0e0de;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .preset-btn:hover { border-color: #aaa; color: #333; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none; border-top: 1px solid #e8e8e6; margin: 28px 0;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+  .btn {
+    border: none; border-radius: 6px;
+    padding: 10px 20px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary   { background: #111; color: #fff; }
+  .btn-primary:hover:not(:disabled)   { background: #333; }
+
+  .btn-pause     { background: #fff; color: #111; border: 1px solid #e0e0de; }
+  .btn-pause:hover:not(:disabled)     { border-color: #aaa; }
+
+  .btn-resume    { background: #fff; color: #111; border: 1px solid #e0e0de; }
+  .btn-resume:hover:not(:disabled)    { border-color: #aaa; }
+
+  .btn-download  { background: #fff; color: #111; border: 1px solid #e0e0de; }
+  .btn-download:hover:not(:disabled)  { border-color: #aaa; }
+
+  /* ── PROGRESS ── */
+  .progress-section { margin-top: 28px; }
+
+  .progress-bar {
+    height: 4px;
+    background: #ebebea;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.35s ease;
+  }
+  .progress-label { font-size: 12px; color: #aaa; text-align: right; }
+
+  /* ── STATS ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 1px solid #e8e8e6;
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+
+  /* ── LOG ── */
+  .log-wrap { margin-top: 20px; }
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .log-title {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+    text-transform: uppercase; color: #888;
+  }
+  .btn-clear-log {
+    background: none; border: none; font-family: inherit;
+    font-size: 11px; color: #ccc; cursor: pointer; transition: color 0.15s;
+  }
+  .btn-clear-log:hover { color: #888; }
+
+  .log-box {
+    background: #fff;
+    border: 1px solid #e8e8e6;
+    border-radius: 8px;
+    padding: 14px;
+    height: 260px;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+
+  .log-box::-webkit-scrollbar { width: 4px; }
+  .log-box::-webkit-scrollbar-track { background: transparent; }
+  .log-box::-webkit-scrollbar-thumb { background: #e0e0de; border-radius: 2px; }
+
+  .le { display: flex; gap: 10px; }
+  .lt { color: #ccc; flex-shrink: 0; }
+  .ok  { color: #16a34a; }
+  .er  { color: #dc2626; }
+  .inf { color: #555; }
+  .wn  { color: #d97706; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>NFT Holder Snapshot</h1>
+  <p class="subtitle">MegaETH · Parallel fetching · Auto-retry · Pause & resume</p>
+
+  <!-- RPC -->
+  <div class="field">
+    <label>RPC Endpoint</label>
+    <div class="presets">
+      <button class="preset-btn" onclick="setRpc('https://mainnet.megaeth.com/rpc')">mainnet.megaeth.com</button>
+      <button class="preset-btn" onclick="setRpc('https://megaeth.drpc.org/')">drpc.org</button>
+      <button class="preset-btn" onclick="setRpc('https://megaeth-mainnet.rpc.thirdweb.com')">thirdweb</button>
+    </div>
+    <input type="text" id="rpc" value="https://mainnet.megaeth.com/rpc" />
+  </div>
+
+  <!-- CONTRACT -->
+  <div class="field">
+    <label>Contract Address</label>
+    <input type="text" id="contract" value="0x3fD43a658915A7Ce5ae0A2E48f72B9fCE7bA0C44" />
+  </div>
+
+  <hr class="divider" />
+
+  <!-- TUNING -->
+  <div class="grid-3" style="margin-bottom:14px;">
+    <div class="field" style="margin-bottom:0">
+      <label>From Block</label>
+      <input type="number" id="fromBlock" value="7852667" />
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Chunk Size</label>
+      <input type="number" id="chunkSize" value="100000" />
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Concurrency</label>
+      <input type="number" id="concurrency" value="5" min="1" max="20" />
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <div class="field" style="margin-bottom:0">
+      <label>Max Retries</label>
+      <input type="number" id="maxRetries" value="5" min="1" max="20" />
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Retry Delay (ms)</label>
+      <input type="number" id="retryDelay" value="2000" />
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="btn-row">
+    <button class="btn btn-primary"  id="start-btn"  onclick="startSnapshot()">Run snapshot</button>
+    <button class="btn btn-pause"    id="stop-btn"   onclick="stopSnapshot()"    disabled>Pause</button>
+    <button class="btn btn-resume"   id="resume-btn" onclick="resumeSnapshot()"  disabled>Resume</button>
+    <button class="btn btn-download" id="dl-btn"     onclick="downloadTxt()"     disabled>Download .txt</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="progress-label" id="progress-label">—</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-card"><div class="stat-val" id="s-holders">—</div><div class="stat-label">Unique Holders</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-supply">—</div><div class="stat-label">Tokens Tracked</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-events">—</div><div class="stat-label">Total Events</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-block">—</div><div class="stat-label">Latest Block</div></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-wrap">
+    <div class="log-header">
+      <span class="log-title">Activity log</span>
+      <button class="btn-clear-log" onclick="document.getElementById('log').innerHTML=''">Clear</button>
+    </div>
+    <div class="log-box" id="log"></div>
+  </div>
+
+</div>
+
+<script>
+/* ── Core constants ──────────────────────────────────────────────── */
+const ZERO = '0x0000000000000000000000000000000000000000';
+const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+let holders     = {};
+let running     = false;
+let stopped     = false;
+let totalEvents = 0;
+let downloadData = '';
+let resumeState  = null;
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+function setRpc(url) { document.getElementById('rpc').value = url; }
+
+function log(msg, type = 'inf') {
+  const box = document.getElementById('log');
+  const now = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'le';
+  div.innerHTML = '<span class="lt">' + now + '</span><span class="' + type + '">' + msg + '</span>';
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateStats() {
+  const holderSet = new Set(Object.values(holders));
+  document.getElementById('s-holders').textContent = holderSet.size.toLocaleString();
+  document.getElementById('s-supply').textContent  = Object.keys(holders).length.toLocaleString();
+  document.getElementById('s-events').textContent  = totalEvents.toLocaleString();
+}
+
+/* ── RPC call ────────────────────────────────────────────────────── */
+async function rpcCall(rpc, method, params, timeout = 30000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(rpc, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    return json.result;
+  } catch(e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+/* ── Chunk fetch w/ retry ────────────────────────────────────────── */
+async function fetchChunkWithRetry(rpc, contract, start, end, maxRetries, retryDelay) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await rpcCall(rpc, 'eth_getLogs', [{
+        address: contract,
+        topics:  [TRANSFER_TOPIC],
+        fromBlock: '0x' + start.toString(16),
+        toBlock:   '0x' + end.toString(16)
+      }], 45000);
+    } catch(e) {
+      if (attempt === maxRetries) throw e;
+      const wait = retryDelay * attempt;
+      log('Chunk ' + start + '–' + end + ': retry ' + attempt + '/' + maxRetries + ' after ' + wait + 'ms (' + e.message.slice(0, 60) + ')', 'wn');
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+}
+
+/* ── Process transfer logs ───────────────────────────────────────── */
+function processLogs(logs) {
+  for (const entry of logs) {
+    const from    = '0x' + entry.topics[1].slice(26).toLowerCase();
+    const to      = '0x' + entry.topics[2].slice(26).toLowerCase();
+    const tokenId = entry.topics[3];
+    if (to === ZERO) { delete holders[tokenId]; }
+    else { holders[tokenId] = to; }
+  }
+  totalEvents += logs.length;
+}
+
+/* ── Parallel chunk runner ───────────────────────────────────────── */
+async function runChunks(rpc, contract, chunks, latest, maxRetries, retryDelay, concurrency) {
+  const total     = chunks.length;
+  let done        = 0;
+  let idx         = 0;
+  const startTime = Date.now();
+
+  async function worker() {
+    while (idx < chunks.length && !stopped) {
+      const [start, end] = chunks[idx++];
+      try {
+        const logs = await fetchChunkWithRetry(rpc, contract, start, end, maxRetries, retryDelay);
+        processLogs(logs);
+        done++;
+        if (logs.length > 0) log('Blocks ' + start.toLocaleString() + '–' + end.toLocaleString() + ': ' + logs.length + ' events', 'ok');
+
+        const pct      = Math.round((done / total) * 100);
+        const elapsed  = (Date.now() - startTime) / 1000;
+        const rate     = done / elapsed;
+        const remaining = Math.round((total - done) / rate);
+        document.getElementById('progress').style.width = pct + '%';
+        document.getElementById('progress-label').textContent =
+          pct + '% · ' + done + '/' + total + ' chunks · ~' + remaining + 's remaining';
+        updateStats();
+      } catch(e) {
+        log('FAILED chunk ' + start + '–' + end + ': ' + e.message.slice(0, 80), 'er');
+        if (resumeState) resumeState.failed.push([start, end]);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+}
+
+/* ── Start ───────────────────────────────────────────────────────── */
+async function startSnapshot() {
+  const rpc         = document.getElementById('rpc').value.trim();
+  const contract    = document.getElementById('contract').value.trim().toLowerCase();
+  const fromBlock   = parseInt(document.getElementById('fromBlock').value)   || 0;
+  const chunkSize   = parseInt(document.getElementById('chunkSize').value)   || 100000;
+  const concurrency = Math.max(1, parseInt(document.getElementById('concurrency').value) || 5);
+  const maxRetries  = parseInt(document.getElementById('maxRetries').value)  || 5;
+  const retryDelay  = parseInt(document.getElementById('retryDelay').value)  || 2000;
+
+  holders     = {};
+  totalEvents = 0;
+  stopped     = false;
+
+  document.getElementById('start-btn').disabled  = true;
+  document.getElementById('resume-btn').disabled = true;
+  document.getElementById('stop-btn').disabled   = false;
+  document.getElementById('dl-btn').disabled     = true;
+  document.getElementById('progress').style.width = '0%';
+
+  log('Starting snapshot · contract: ' + contract, 'inf');
+  log('RPC: ' + rpc + ' · chunk: ' + chunkSize + ' · concurrency: ' + concurrency + ' · retries: ' + maxRetries, 'inf');
+
+  try {
+    const latestHex = await rpcCall(rpc, 'eth_blockNumber', []);
+    const latest    = parseInt(latestHex, 16);
+    document.getElementById('s-block').textContent = latest.toLocaleString();
+    log('Latest block: ' + latest.toLocaleString(), 'ok');
+
+    const chunks = [];
+    for (let s = fromBlock; s <= latest; s += chunkSize) {
+      chunks.push([s, Math.min(s + chunkSize - 1, latest)]);
+    }
+    log(chunks.length + ' chunks to scan (' + concurrency + ' parallel workers)…', 'inf');
+
+    resumeState = { chunks, latest, failed: [], rpc, contract, maxRetries, retryDelay, concurrency };
+    await runChunks(rpc, contract, chunks, latest, maxRetries, retryDelay, concurrency);
+
+    if (stopped) {
+      log('Paused. Click Resume to continue.', 'wn');
+      document.getElementById('resume-btn').disabled = false;
+    } else {
+      finalize(contract, latest);
+    }
+  } catch(e) {
+    log('ERROR: ' + e.message, 'er');
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('stop-btn').disabled  = true;
+  }
+}
+
+/* ── Pause ───────────────────────────────────────────────────────── */
+function stopSnapshot() {
+  stopped = true;
+  log('Pausing after in-flight requests finish…', 'wn');
+  document.getElementById('stop-btn').disabled = true;
+}
+
+/* ── Resume ──────────────────────────────────────────────────────── */
+async function resumeSnapshot() {
+  if (!resumeState) return;
+  const { rpc, contract, latest, failed, maxRetries, retryDelay, concurrency } = resumeState;
+  stopped = false;
+  resumeState.failed = [];
+
+  const toProcess = [...failed];
+  if (!toProcess.length) {
+    log('Nothing to resume — all chunks completed.', 'wn');
+    finalize(contract, latest);
+    return;
+  }
+
+  document.getElementById('resume-btn').disabled = true;
+  document.getElementById('stop-btn').disabled   = false;
+  log('Resuming: ' + toProcess.length + ' failed/remaining chunks…', 'inf');
+
+  await runChunks(rpc, contract, toProcess, latest, maxRetries, retryDelay, concurrency);
+
+  if (stopped) {
+    log('Paused again. Click Resume.', 'wn');
+    document.getElementById('resume-btn').disabled = false;
+  } else {
+    finalize(contract, latest);
+  }
+}
+
+/* ── Finalize ────────────────────────────────────────────────────── */
+function finalize(contract, latest) {
+  const holderSet = [...new Set(Object.values(holders))].sort();
+  log('Done. ' + holderSet.length + ' unique holders · ' + Object.keys(holders).length + ' tokens · ' + totalEvents + ' events', 'ok');
+  updateStats();
+
+  downloadData = [
+    'NFT Holder Snapshot',
+    'Contract  : ' + contract,
+    'Chain     : MegaETH',
+    'Block     : ' + latest,
+    'Holders   : ' + holderSet.length,
+    'Tokens    : ' + Object.keys(holders).length,
+    'Events    : ' + totalEvents,
+    'Generated : ' + new Date().toISOString(),
+    '',
+    '--- HOLDER ADDRESSES (' + holderSet.length + ') ---',
+    ...holderSet
+  ].join('\n');
+
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('stop-btn').disabled  = true;
+  document.getElementById('dl-btn').disabled    = false;
+}
+
+/* ── Download ────────────────────────────────────────────────────── */
+function downloadTxt() {
+  const blob = new Blob([downloadData], { type: 'text/plain' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'nft_holders_' + Date.now() + '.txt';
+  a.click();
+}
+</script>
+</body>
+</html>
