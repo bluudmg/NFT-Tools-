@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NFT Holder Snapshot — Monad</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f9f9f8;
+    color: #111;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 60px 24px 80px;
+  }
+
+  .page { max-width: 620px; margin: 0 auto; }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    color: #111;
+  }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 40px; }
+
+  /* ── FIELDS ── */
+  .field { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 7px;
+  }
+
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    border: 1px solid #e0e0de;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #111;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: textfield;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button { display: none; }
+  input:focus { border-color: #aaa; }
+  input::placeholder { color: #bbb; }
+  input:disabled { background: #f4f4f2; color: #bbb; cursor: not-allowed; }
+  input.detecting { border-color: #aaa; color: #aaa; background: #fafaf9; }
+
+  .detect-status {
+    font-size: 11px;
+    margin-top: 6px;
+    min-height: 16px;
+    letter-spacing: 0.01em;
+  }
+  .detect-status.ok   { color: #16a34a; }
+  .detect-status.err  { color: #d97706; }
+  .detect-status.spin { color: #aaa; }
+
+  @keyframes spin-dot {
+    0%,100% { opacity: 0.3; } 50% { opacity: 1; }
+  }
+  .detect-status.spin::before {
+    content: '⟳ ';
+    display: inline-block;
+    animation: spin-dot 1s ease-in-out infinite;
+  }
+
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* ── RPC PRESETS ── */
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .preset-btn {
+    background: #fff;
+    border: 1px solid #e0e0de;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: #aaa; color: #333; }
+
+  /* ── INFO BOX ── */
+  .info-box {
+    background: #fff;
+    border: 1px solid #e8e8e6;
+    border-left: 3px solid #16a34a;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 28px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.8;
+  }
+  .info-box strong { color: #16a34a; font-weight: 600; }
+  .info-box code {
+    background: #f4f4f2;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #555;
+  }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid #e8e8e6; margin: 28px 0; }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+  .btn {
+    border: none; border-radius: 6px;
+    padding: 10px 20px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary  { background: #111; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #333; }
+
+  .btn-outline {
+    background: #fff; color: #111;
+    border: 1px solid #e0e0de;
+  }
+  .btn-outline:hover:not(:disabled) { border-color: #aaa; }
+
+  /* ── PROGRESS ── */
+  .progress-section { margin-top: 28px; }
+  .progress-bar {
+    height: 4px; background: #ebebea;
+    border-radius: 2px; overflow: hidden; margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%; background: #111; border-radius: 2px;
+    width: 0%; transition: width 0.25s ease;
+  }
+  .progress-label { font-size: 12px; color: #aaa; text-align: right; }
+
+  /* ── STATS ── */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-top: 20px;
+  }
+  .stat-card {
+    background: #fff; border: 1px solid #e8e8e6;
+    border-radius: 8px; padding: 14px 12px; text-align: center;
+  }
+  .stat-val   { font-size: 18px; font-weight: 600; color: #111; letter-spacing: -0.02em; }
+  .stat-label { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+
+  /* ── FAILED INFO ── */
+  .failed-box {
+    margin-top: 12px;
+    background: #fff8f8;
+    border: 1px solid #f0d8d8;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #c04040;
+    display: none;
+    line-height: 1.6;
+  }
+
+  /* ── LOG ── */
+  .log-wrap { margin-top: 20px; }
+  .log-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+  }
+  .log-title { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #888; }
+  .btn-clear-log {
+    background: none; border: none; font-family: inherit;
+    font-size: 11px; color: #ccc; cursor: pointer; transition: color 0.15s;
+  }
+  .btn-clear-log:hover { color: #888; }
+
+  .log-box {
+    background: #fff; border: 1px solid #e8e8e6; border-radius: 8px;
+    padding: 14px; height: 260px; overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px; line-height: 1.8;
+  }
+  .log-box::-webkit-scrollbar { width: 4px; }
+  .log-box::-webkit-scrollbar-track { background: transparent; }
+  .log-box::-webkit-scrollbar-thumb { background: #e0e0de; border-radius: 2px; }
+
+  .le  { display: flex; gap: 10px; }
+  .lt  { color: #ccc; flex-shrink: 0; }
+  .ok  { color: #16a34a; }
+  .er  { color: #dc2626; }
+  .inf { color: #555; }
+  .wn  { color: #d97706; }
+  .dim { color: #aaa; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>NFT Holder Snapshot</h1>
+  <p class="subtitle">Monad Mainnet · ownerOf scan · immune to RPC log limits · 100% accurate</p>
+
+  <div class="info-box">
+    <strong>Direct ownerOf() calls per token ID</strong><br>
+    Calls <code>ownerOf(1)</code> through <code>ownerOf(N)</code> directly — no event log limits, no missing data. Batches multiple calls per HTTP request for speed.
+  </div>
+
+  <!-- RPC -->
+  <div class="field">
+    <label>RPC Endpoint</label>
+    <div class="presets">
+      <button class="preset-btn" onclick="setRpc('https://monad-mainnet.drpc.org')">drpc.org</button>
+      <button class="preset-btn" onclick="setRpc('https://monad-mainnet.rpc.thirdweb.com')">thirdweb</button>
+      <button class="preset-btn" onclick="setRpc('https://rpc.ankr.com/monad')">ankr</button>
+      <button class="preset-btn" onclick="setRpc('https://monad.blockpi.network/v1/rpc/public')">blockpi</button>
+    </div>
+    <input type="text" id="rpc" value="https://monad-mainnet.drpc.org" />
+  </div>
+
+  <!-- CONTRACT -->
+  <div class="field">
+    <label>Contract Address</label>
+    <input type="text" id="contract" value="0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0" placeholder="0x..." oninput="scheduleDetect()" />
+    <div class="detect-status" id="detect-status"></div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- SETTINGS -->
+  <div class="grid-3" style="margin-bottom: 24px;">
+    <div class="field" style="margin-bottom:0">
+      <label>Token ID Start</label>
+      <input type="number" id="tokenStart" placeholder="Auto" oninput="userLockedStart = this.value !== ''" />
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Token ID End</label>
+      <input type="number" id="tokenEnd" placeholder="Auto" oninput="userLockedEnd = this.value !== ''" />
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Concurrency</label>
+      <input type="number" id="concurrency" value="20" min="1" max="100" />
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="btn-row">
+    <button class="btn btn-primary"  id="start-btn"  onclick="startSnapshot()">Run snapshot</button>
+    <button class="btn btn-outline"  id="stop-btn"   onclick="stopSnapshot()"    disabled>Pause</button>
+    <button class="btn btn-outline"  id="resume-btn" onclick="resumeSnapshot()"  disabled>Resume</button>
+    <button class="btn btn-outline"  id="dl-btn"     onclick="downloadTxt()"     disabled>Download .txt</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="progress-label" id="progress-label">—</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-card"><div class="stat-val" id="s-holders">—</div><div class="stat-label">Unique Holders</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-supply">—</div><div class="stat-label">Tokens Found</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-failed">—</div><div class="stat-label">Failed / Burned</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-progress">—</div><div class="stat-label">Queried</div></div>
+  </div>
+
+  <div class="failed-box" id="failed-info"></div>
+
+  <!-- LOG -->
+  <div class="log-wrap">
+    <div class="log-header">
+      <span class="log-title">Activity log</span>
+      <button class="btn-clear-log" onclick="document.getElementById('log').innerHTML=''">Clear</button>
+    </div>
+    <div class="log-box" id="log"></div>
+  </div>
+
+</div>
+<script>
+/* ── Constants ───────────────────────────────────────────────────── */
+const OWNER_OF_SIG    = '0x6352211e';
+const TOTAL_SUPPLY_SIG = '0x18160ddd';
+
+/* ── State ───────────────────────────────────────────────────────── */
+let holderMap    = {};
+let failedIds    = [];
+let stopped      = false;
+let downloadData = '';
+let pendingIds   = [];
+let resumeMeta   = null;
+let detectTimer  = null;
+let userLockedStart = false; // true if user manually edited tokenStart
+let userLockedEnd   = false; // true if user manually edited tokenEnd
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+function setRpc(url) {
+  document.getElementById('rpc').value = url;
+  // Re-run detect with new RPC but keep existing range values
+  clearTimeout(detectTimer);
+  const contract = document.getElementById('contract').value.trim();
+  if (contract && contract.length >= 42 && contract.startsWith('0x')) {
+    setDetectStatus('Detecting token range…', 'spin');
+    detectTimer = setTimeout(runDetect, 400);
+  }
+}
+function sleep(ms)   { return new Promise(r => setTimeout(r, ms)); }
+
+function fmtTime(s) {
+  if (s < 60)   return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+  return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function log(msg, type) {
+  type = type || 'inf';
+  const box = document.getElementById('log');
+  const d   = document.createElement('div');
+  d.className = 'le';
+  d.innerHTML = '<span class="lt">' + new Date().toLocaleTimeString() + '</span><span class="' + type + '">' + esc(msg) + '</span>';
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateStats() {
+  const holders = new Set(Object.values(holderMap));
+  document.getElementById('s-holders').textContent  = holders.size.toLocaleString();
+  document.getElementById('s-supply').textContent   = Object.keys(holderMap).length.toLocaleString();
+  document.getElementById('s-failed').textContent   = failedIds.length.toLocaleString();
+  document.getElementById('s-progress').textContent = (Object.keys(holderMap).length + failedIds.length).toLocaleString();
+}
+
+function setUi(s) {
+  document.getElementById('start-btn').disabled  = s.start;
+  document.getElementById('stop-btn').disabled   = s.stop;
+  document.getElementById('resume-btn').disabled = s.resume;
+  document.getElementById('dl-btn').disabled     = s.dl;
+}
+
+function setDetectStatus(msg, type) {
+  const el = document.getElementById('detect-status');
+  el.textContent = msg;
+  el.className   = 'detect-status ' + (type || '');
+}
+
+/* ── RPC call ────────────────────────────────────────────────────── */
+async function rpcCall(rpc, method, params, timeout) {
+  timeout = timeout || 15000;
+  const ctrl = new AbortController();
+  const tid  = setTimeout(function() { ctrl.abort(); }, timeout);
+  try {
+    const res = await fetch(rpc, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: method, params: params }),
+      signal: ctrl.signal
+    });
+    clearTimeout(tid);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+    return json.result;
+  } catch(e) { clearTimeout(tid); throw e; }
+}
+
+/* ── Auto-detect token range from contract ───────────────────────── */
+function scheduleDetect() {
+  clearTimeout(detectTimer);
+  // New contract = reset manual locks so auto-detect can fill both fields fresh
+  userLockedStart = false;
+  userLockedEnd   = false;
+  document.getElementById('tokenStart').value = '';
+  document.getElementById('tokenEnd').value   = '';
+  const contract = document.getElementById('contract').value.trim();
+  if (!contract || contract.length < 42 || !contract.startsWith('0x')) {
+    setDetectStatus('', '');
+    return;
+  }
+  setDetectStatus('Detecting token range…', 'spin');
+  detectTimer = setTimeout(runDetect, 700);
+}
+
+async function runDetect() {
+  const rpc      = document.getElementById('rpc').value.trim();
+  const contract = document.getElementById('contract').value.trim();
+
+  if (!rpc || !contract || !contract.startsWith('0x')) return;
+
+  const startInp = document.getElementById('tokenStart');
+  const endInp   = document.getElementById('tokenEnd');
+
+  // If both fields are manually locked, nothing to detect
+  if (userLockedStart && userLockedEnd) {
+    setDetectStatus('Range set manually — clear fields to re-detect', 'err');
+    return;
+  }
+
+  if (!userLockedStart) startInp.classList.add('detecting');
+  if (!userLockedEnd)   endInp.classList.add('detecting');
+  setDetectStatus('Detecting token range…', 'spin');
+
+  try {
+    // ── Step 1: totalSupply() → gives us the end ──────────────────
+    let supply = null;
+    if (!userLockedEnd) {
+      try {
+        const result = await rpcCall(rpc, 'eth_call', [{ to: contract, data: TOTAL_SUPPLY_SIG }, 'latest'], 10000);
+        if (result && result !== '0x') {
+          const n = parseInt(result, 16);
+          if (n > 0 && n < 10000000) supply = n;
+        }
+      } catch(_) {}
+    }
+
+    // ── Step 2: detect start — try ownerOf(0) then ownerOf(1) ─────
+    let startId = null;
+    if (!userLockedStart) {
+      const batch = [
+        { jsonrpc: '2.0', id: 0, method: 'eth_call', params: [{ to: contract, data: OWNER_OF_SIG + '0'.padStart(64,'0') }, 'latest'] },
+        { jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: contract, data: OWNER_OF_SIG + '1'.toString(16).padStart(64,'0') }, 'latest'] }
+      ];
+      try {
+        const ctrl = new AbortController();
+        const tid  = setTimeout(function() { ctrl.abort(); }, 12000);
+        const res  = await fetch(rpc, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(batch),
+          signal: ctrl.signal
+        });
+        clearTimeout(tid);
+        const results = await res.json();
+        const r0 = results[0];
+        const r1 = results[1];
+
+        if (r0 && !r0.error && r0.result && r0.result !== '0x' && r0.result.length >= 66) {
+          const owner = '0x' + r0.result.slice(-40);
+          if (owner !== '0x0000000000000000000000000000000000000000') startId = 0;
+        }
+        if (startId === null && r1 && !r1.error && r1.result && r1.result !== '0x' && r1.result.length >= 66) {
+          const owner = '0x' + r1.result.slice(-40);
+          if (owner !== '0x0000000000000000000000000000000000000000') startId = 1;
+        }
+      } catch(_) {}
+    }
+
+    // ── Apply results — only overwrite unlocked fields ────────────
+    const parts = [];
+
+    if (!userLockedStart) {
+      if (startId !== null) {
+        startInp.value = startId;
+        parts.push('Start: ' + startId);
+      } else {
+        parts.push('Start: unknown');
+      }
+    } else {
+      parts.push('Start: ' + startInp.value + ' (manual)');
+    }
+
+    if (!userLockedEnd) {
+      if (supply !== null) {
+        endInp.value = supply;
+        parts.push('End: ' + supply.toLocaleString());
+      } else {
+        parts.push('End: unknown');
+      }
+    } else {
+      parts.push('End: ' + endInp.value + ' (manual)');
+    }
+
+    const detected = (!userLockedStart && startId !== null) || (!userLockedEnd && supply !== null);
+    setDetectStatus((detected ? '✓ ' : '⚠ ') + parts.join('  ·  '), detected ? 'ok' : 'err');
+
+  } catch(e) {
+    setDetectStatus('Detection failed: ' + e.message.slice(0, 60), 'err');
+  } finally {
+    startInp.classList.remove('detecting');
+    endInp.classList.remove('detecting');
+  }
+}
+
+/* ── Batch ownerOf ───────────────────────────────────────────────── */
+async function batchOwnerOf(rpc, contract, tokenIds) {
+  const requests = tokenIds.map(function(id, i) {
+    return {
+      jsonrpc: '2.0',
+      id: i,
+      method: 'eth_call',
+      params: [{ to: contract, data: OWNER_OF_SIG + id.toString(16).padStart(64, '0') }, 'latest']
+    };
+  });
+  const ctrl = new AbortController();
+  const tid  = setTimeout(function() { ctrl.abort(); }, 30000);
+  try {
+    const res     = await fetch(rpc, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requests),
+      signal: ctrl.signal
+    });
+    clearTimeout(tid);
+    return await res.json();
+  } catch(e) { clearTimeout(tid); throw e; }
+}
+
+/* ── Decode ownerOf result ───────────────────────────────────────── */
+function decodeOwner(hexResult) {
+  if (!hexResult || hexResult === '0x' || hexResult.length < 66) return null;
+  return '0x' + hexResult.slice(hexResult.length - 40).toLowerCase();
+}
+
+/* ── Core scanner ────────────────────────────────────────────────── */
+async function scanTokenIds(rpc, contract, tokenIds, concurrency, batchSize) {
+  const total = tokenIds.length;
+  let done    = 0;
+  let idx     = 0;
+  const t0    = Date.now();
+
+  async function worker() {
+    while (idx < tokenIds.length && !stopped) {
+      const batch = tokenIds.slice(idx, idx + batchSize);
+      idx += batch.length;
+
+      let results;
+      let attempt = 0;
+      while (attempt < 5) {
+        try {
+          results = await batchOwnerOf(rpc, contract, batch);
+          break;
+        } catch(e) {
+          attempt++;
+          if (attempt >= 5) {
+            for (const id of batch) {
+              if (!failedIds.includes(id)) failedIds.push(id);
+            }
+            log('Batch ' + batch[0] + '–' + batch[batch.length-1] + ': failed after 5 retries', 'er');
+            done += batch.length;
+            updateStats();
+            break;
+          }
+          log('Batch ' + batch[0] + '–' + batch[batch.length-1] + ': retry ' + attempt + '/5 (' + e.message.slice(0, 45) + ')', 'wn');
+          await sleep(1500 * attempt);
+        }
+      }
+
+      if (!results) continue;
+
+      let batchFound = 0;
+      for (let i = 0; i < results.length; i++) {
+        const tokenId = batch[i];
+        const r       = results[i];
+        if (r.error || !r.result || r.result === '0x') {
+          if (!failedIds.includes(tokenId)) failedIds.push(tokenId);
+        } else {
+          const owner = decodeOwner(r.result);
+          if (owner && owner !== '0x0000000000000000000000000000000000000000') {
+            holderMap[tokenId] = owner;
+            batchFound++;
+          } else {
+            if (!failedIds.includes(tokenId)) failedIds.push(tokenId);
+          }
+        }
+      }
+
+      done += batch.length;
+      if (batchFound > 0) {
+        log('Token IDs ' + batch[0] + '–' + batch[batch.length-1] + ': ' + batchFound + ' owners found', 'ok');
+      }
+
+      const pct     = Math.round(done / total * 100);
+      const elapsed = (Date.now() - t0) / 1000;
+      const rate    = done / Math.max(elapsed, 0.1);
+      const eta     = Math.round((total - done) / rate);
+      document.getElementById('progress').style.width = pct + '%';
+      document.getElementById('progress-label').textContent =
+        pct + '% · ' + done.toLocaleString() + '/' + total.toLocaleString() + ' tokens queried · ~' + fmtTime(eta) + ' remaining';
+      updateStats();
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, function() { return worker(); }));
+}
+
+/* ── Start ───────────────────────────────────────────────────────── */
+async function startSnapshot() {
+  const rpc         = document.getElementById('rpc').value.trim();
+  const contract    = document.getElementById('contract').value.trim().toLowerCase();
+  const tokenStart  = parseInt(document.getElementById('tokenStart').value);
+  const tokenEnd    = parseInt(document.getElementById('tokenEnd').value);
+  const concurrency = Math.max(1, parseInt(document.getElementById('concurrency').value) || 20);
+  const batchSize   = 20;
+
+  if (!rpc)      { alert('Enter an RPC endpoint.'); return; }
+  if (!contract) { alert('Enter a contract address.'); return; }
+  if (isNaN(tokenStart) || isNaN(tokenEnd)) {
+    alert('Token range not detected yet. Enter values manually or wait for auto-detect.');
+    return;
+  }
+
+  holderMap = {}; failedIds = []; stopped = false; downloadData = '';
+  setUi({ start: true, stop: false, resume: true, dl: true });
+  document.getElementById('progress').style.width = '0%';
+  document.getElementById('progress-label').textContent = '—';
+  document.getElementById('failed-info').style.display = 'none';
+
+  log('Contract   : ' + contract, 'inf');
+  log('RPC        : ' + rpc, 'inf');
+  log('Method     : ownerOf(tokenId) — immune to log limits', 'inf');
+  log('Token range: ' + tokenStart + ' → ' + tokenEnd + ' (' + (tokenEnd - tokenStart + 1).toLocaleString() + ' tokens)', 'inf');
+  log('Batch size : ' + batchSize + ' per HTTP request · ' + concurrency + ' parallel workers', 'inf');
+
+  const allIds = Array.from({ length: tokenEnd - tokenStart + 1 }, function(_, i) { return tokenStart + i; });
+  resumeMeta   = { rpc, contract, concurrency, batchSize };
+  pendingIds   = [];
+
+  try {
+    await scanTokenIds(rpc, contract, allIds, concurrency, batchSize);
+    if (stopped) {
+      log('Paused. Click Resume to continue.', 'wn');
+      setUi({ start: false, stop: true, resume: false, dl: false });
+    } else {
+      finalize(contract);
+    }
+  } catch(e) {
+    log('ERROR: ' + e.message, 'er');
+    setUi({ start: false, stop: true, resume: true, dl: true });
+  }
+}
+
+/* ── Pause ───────────────────────────────────────────────────────── */
+function stopSnapshot() {
+  stopped = true;
+  log('Pausing after current batch completes…', 'wn');
+  document.getElementById('stop-btn').disabled   = true;
+  document.getElementById('resume-btn').disabled = false;
+}
+
+/* ── Resume ──────────────────────────────────────────────────────── */
+async function resumeSnapshot() {
+  if (!resumeMeta) return;
+  const { rpc, contract, concurrency, batchSize } = resumeMeta;
+  stopped = false;
+
+  const toRetry = [...failedIds];
+  failedIds = [];
+  setUi({ start: true, stop: false, resume: true, dl: true });
+
+  if (!toRetry.length) {
+    finalize(contract);
+    return;
+  }
+
+  log('Retrying ' + toRetry.length + ' failed token IDs…', 'inf');
+  await scanTokenIds(rpc, contract, toRetry, concurrency, batchSize);
+
+  if (stopped) {
+    log('Paused again.', 'wn');
+    setUi({ start: false, stop: true, resume: false, dl: false });
+  } else {
+    finalize(contract);
+  }
+}
+
+/* ── Finalize ────────────────────────────────────────────────────── */
+function finalize(contract) {
+  const holderSet  = [...new Set(Object.values(holderMap))].sort();
+  const tokenCount = Object.keys(holderMap).length;
+  log('Done. ' + holderSet.length + ' unique holders · ' + tokenCount + ' tokens · ' + failedIds.length + ' not found/burned', 'ok');
+  updateStats();
+
+  if (failedIds.length > 0) {
+    const info = document.getElementById('failed-info');
+    info.style.display = 'block';
+    info.textContent = failedIds.length + ' token IDs returned no owner (not yet minted, burned, or RPC error): ' +
+      failedIds.slice(0, 20).join(', ') + (failedIds.length > 20 ? '…' : '');
+  }
+
+  downloadData = [
+    'NFT Holder Snapshot',
+    'Contract       : ' + contract,
+    'Chain          : Monad Mainnet',
+    'Method         : ownerOf() per token ID',
+    'Unique Holders : ' + holderSet.length,
+    'Tokens Found   : ' + tokenCount,
+    'Not Found/Burned: ' + failedIds.length,
+    'Generated      : ' + new Date().toISOString(),
+    '',
+    '--- UNIQUE HOLDER ADDRESSES (' + holderSet.length + ') ---',
+    ...holderSet,
+    '',
+    '--- TOKEN → OWNER MAP (' + tokenCount + ' entries) ---',
+    ...Object.entries(holderMap)
+      .sort(function(a, b) { return parseInt(a[0]) - parseInt(b[0]); })
+      .map(function(e) { return e[0] + '\t' + e[1]; })
+  ].join('\n');
+
+  setUi({ start: false, stop: true, resume: true, dl: false });
+}
+
+/* ── Download ────────────────────────────────────────────────────── */
+function downloadTxt() {
+  const a = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([downloadData], { type: 'text/plain' }));
+  a.download = 'nft_holders_' + Date.now() + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ── Auto-detect on page load with default contract ─────────────── */
+window.addEventListener('load', function() { scheduleDetect(); });
+</script>
+</body>
+</html>
